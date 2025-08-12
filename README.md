@@ -187,15 +187,36 @@ export GROQ_API_KEY=your_api_key_here
 #### Core Commands
 - `/help` - Show help and available commands
 - `/login` - Login with your Groq API key (legacy support)
-- `/model` - Select your model
+- `/model <model_name>` - Select your model
 - `/clear` - Clear chat history and context
 - `/reasoning` - Toggle display of reasoning content in messages
+- `/version`, `/v` - Show current version information
+- `/update` - Check for updates and upgrade to the latest version
 
-#### 🔥 **NEW: Multi-Provider Commands**
+#### 🔥 **Multi-Provider Commands**
 - `/providers` - List all available LLM providers and their status
 - `/switch <provider>` - Switch between Groq, Ollama, and LM Studio
 - `/models [query]` - List or search models from all providers
 - `/provider-help` - Setup guide for all providers
+
+#### 🔄 **Session Management Commands**
+- `/session save` - Manually save current session
+- `/session restore` - Restore last saved session  
+- `/session clear` - Delete saved session
+- `/session status` - Show session information
+- `/sess` - Alias for `/session`
+
+> **💾 Auto-Save**: Sessions are automatically saved after each interaction and restored on startup (expire after 24 hours)
+
+#### 🤖 **Agent Management Commands**
+- `/agent [name]` - Switch to a different agent or list available agents
+- `/agents` - List all available agents with details
+- `/agent-create <name> <prompt>` - Create a new agent with custom system prompt
+- `/agent-delete <name>` - Delete a custom agent
+- `/agent-export <name> <file>` - Export an agent to a file
+- `/agent-import <file>` - Import an agent from a file
+- `/system <prompt>` - Set a temporary system prompt for current session
+- `/system-reset` - Reset to the default system prompt
 
 > **🌟 Quick Start**: Use `/providers` to see what's available, then `/switch ollama` to use local models!
 

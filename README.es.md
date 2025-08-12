@@ -77,15 +77,36 @@ groq
 #### Comandos Principales
 - `/help` - Mostrar ayuda y comandos disponibles
 - `/login` - Iniciar sesión con tu clave API de Groq (soporte legacy)
-- `/model` - Seleccionar tu modelo
+- `/model <nombre_modelo>` - Seleccionar tu modelo
 - `/clear` - Limpiar historial de chat y contexto
 - `/reasoning` - Alternar visualización de contenido de razonamiento
+- `/version`, `/v` - Mostrar información de versión actual
+- `/update` - Verificar actualizaciones y actualizar a la última versión
 
-#### 🔥 **NUEVO: Comandos Multi-Proveedor**
+#### 🔥 **Comandos Multi-Proveedor**
 - `/providers` - Listar todos los proveedores LLM disponibles y su estado
 - `/switch <proveedor>` - Cambiar entre Groq, Ollama y LM Studio
 - `/models [consulta]` - Listar o buscar modelos de todos los proveedores
 - `/provider-help` - Guía de configuración para todos los proveedores
+
+#### 🔄 **Comandos de Gestión de Sesión**
+- `/session save` - Guardar manualmente la sesión actual
+- `/session restore` - Restaurar la última sesión guardada  
+- `/session clear` - Eliminar sesión guardada
+- `/session status` - Mostrar información de sesión
+- `/sess` - Alias para `/session`
+
+> **💾 Auto-Guardado**: Las sesiones se guardan automáticamente después de cada interacción y se restauran al iniciar (expiran después de 24 horas)
+
+#### 🤖 **Comandos de Gestión de Agentes**
+- `/agent [nombre]` - Cambiar a un agente diferente o listar agentes disponibles
+- `/agents` - Listar todos los agentes disponibles con detalles
+- `/agent-create <nombre> <prompt>` - Crear un nuevo agente con prompt del sistema personalizado
+- `/agent-delete <nombre>` - Eliminar un agente personalizado
+- `/agent-export <nombre> <archivo>` - Exportar un agente a un archivo
+- `/agent-import <archivo>` - Importar un agente desde un archivo
+- `/system <prompt>` - Establecer un prompt del sistema temporal para la sesión actual
+- `/system-reset` - Restablecer al prompt del sistema por defecto
 
 > **🌟 Inicio Rápido**: Usa `/providers` para ver qué está disponible, luego `/switch ollama` para usar modelos locales!
 
