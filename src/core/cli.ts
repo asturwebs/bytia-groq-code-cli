@@ -7,6 +7,7 @@ import { Agent } from './agent.js';
 import App from '../ui/App.js';
 import { logger, LogLevel } from '../utils/logger.js';
 import { getCurrentVersion, performBackgroundVersionCheck, VersionInfo } from '../utils/version.js';
+import { initializeInterruptHandler, onInterrupt } from '../utils/interrupt-handler.js';
 
 const program = new Command();
 
@@ -53,12 +54,27 @@ async function startChat(
     
   let defaultModel = 'moonshotai/kimi-k2-instruct';
   try {
+    // Initialize robust interrupt handling
+    const interruptHandler = initializeInterruptHandler();
+    logger.info('Interrupt handler initialized');
+    
     logger.info('Initializing Groq Code CLI...');
     logger.debug('Configuration', { temperature, system, debug, model: defaultModel });
     
     // Create agent (API key will be checked on first message)
     const agent = await Agent.create(defaultModel, temperature, system, debug);
     logger.info('Agent created successfully');
+    
+    // Register cleanup callback for graceful shutdown
+    onInterrupt(async () => {
+      logger.info('Cleaning up agent during shutdown...');
+      try {
+        agent.interrupt(); // Stop any ongoing requests
+        logger.info('Agent cleanup completed');
+      } catch (error) {
+        logger.error('Error during agent cleanup', error);
+      }
+    });
 
     render(React.createElement(App, { agent }));
   } catch (error) {

@@ -178,6 +178,25 @@ export GROQ_API_KEY=your_api_key_here
 - `/clear` - Clear chat history and context
 - `/reasoning` - Toggle display of reasoning content in messages
 
+### 🚨 Interrupt Controls
+
+**Problem Solved**: The CLI now has robust interrupt handling for when the agent gets stuck in loops or long processes.
+
+**Quick Reference:**
+- **ESC**: Smart interrupt (context-aware)
+- **Ctrl+C**: Force exit (double press if needed)
+- **ESC during processing**: Interrupt AI generation
+- **ESC during approval**: Reject tool execution
+- **ESC while typing**: Clear input text
+
+**When ESC Works:**
+- ✅ AI is processing/thinking
+- ✅ Waiting for tool approval
+- ✅ Clearing input text
+- ❌ Tool execution in progress (wait for completion)
+
+📖 **For detailed interrupt documentation**, see [`docs/INTERRUPTIONS.md`](docs/INTERRUPTIONS.md).
+
 
 ## Development
 

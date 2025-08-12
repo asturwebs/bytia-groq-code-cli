@@ -11,6 +11,8 @@ import Login from '../input-overlays/Login.js';
 import ModelSelector from '../input-overlays/ModelSelector.js';
 import MaxIterationsContinue from '../input-overlays/MaxIterationsContinue.js';
 import { handleSlashCommand } from '../../../commands/index.js';
+import { triggerInterrupt } from '../../../utils/interrupt-handler.js';
+import { logger } from '../../../utils/logger.js';
 
 interface ChatProps {
   agent: Agent;
@@ -78,15 +80,40 @@ export default function Chat({ agent }: ChatProps) {
     if (key.escape) {
       // If waiting for tool approval, reject the tool
       if (pendingApproval) {
+        logger.info('User rejected tool execution via ESC');
+        addMessage({
+          role: 'system',
+          content: '🚫 Tool execution rejected by user (ESC).',
+        });
         handleApproval(false);
       }
       // If model is actively processing (but not waiting for approval or executing tools after approval)
       else if (isProcessing && !currentToolExecution) {
+        logger.info('User interrupted processing via ESC');
+        addMessage({
+          role: 'system',
+          content: '⏹️  Request interrupted by user (ESC).',
+        });
         interruptRequest();
+      }
+      // If there's a current tool execution, interrupt it
+      else if (currentToolExecution) {
+        logger.info('User attempted to interrupt tool execution via ESC');
+        addMessage({
+          role: 'system',
+          content: '⚠️  Cannot interrupt tool execution in progress. Please wait for completion.',
+        });
       }
       // If user is typing and nothing else is happening, clear the input
       else if (showInput && inputValue.trim()) {
         setInputValue('');
+      }
+      // If nothing else, show help message
+      else {
+        addMessage({
+          role: 'system',
+          content: '💡 ESC: Clear input | Ctrl+C: Exit CLI | Use /help for more commands',
+        });
       }
     }
   });
@@ -210,12 +237,18 @@ export default function Chat({ agent }: ChatProps) {
             value={inputValue}
             onChange={setInputValue}
             onSubmit={handleSendMessage}
-            placeholder="... (Esc to clear, Ctrl+C to exit)"
+            placeholder={isProcessing 
+              ? "... (ESC to interrupt, Ctrl+C to force exit)" 
+              : "... (ESC for help, Ctrl+C to exit)"}
             userMessageHistory={userMessageHistory}
           />
         ) : (
           <Box>
-            <Text color="gray" dimColor>Processing...</Text>
+            <Text color="yellow" dimColor>
+              {currentToolExecution 
+                ? `Executing ${currentToolExecution.name}... (Please wait)` 
+                : 'Processing... (ESC to interrupt)'}
+            </Text>
           </Box>
         )}
       </Box>

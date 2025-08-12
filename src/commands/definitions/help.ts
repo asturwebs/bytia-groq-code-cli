@@ -23,9 +23,19 @@ Navigation:
 - Press Enter to execute the selected command
 
 Keyboard Shortcuts:
-- Esc - Clear input box / Interrupt processing / Reject tool approval
-- Shift+Tab - Toggle auto-approval for editing tools
-- Ctrl+C - Exit the application
+- **ESC** - Smart interrupt control:
+  • Clear input text when typing
+  • Interrupt AI processing (not tool execution)
+  • Reject tool approval when prompted
+  • Show this help when nothing else applies
+- **Ctrl+C** - Force exit the CLI (double press if needed)
+- **Shift+Tab** - Toggle auto-approval for editing tools
+
+🚨 **Interrupt Guide:**
+• **Safe to interrupt**: AI thinking, generating responses
+• **Cannot interrupt**: Tool execution in progress
+• **ESC doesn't work?** Try Ctrl+C for immediate exit
+• **In infinite loop?** ESC during "Processing..." state
 
 This is a highly customizable, lightweight, and open-source coding CLI powered by Groq. Ask for help with coding tasks, debugging issues, or explaining code.`
     });
