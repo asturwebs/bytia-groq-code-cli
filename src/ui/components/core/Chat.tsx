@@ -137,6 +137,7 @@ export default function Chat({ agent }: ChatProps) {
           setShowModelSelector,
           toggleReasoning,
           showReasoning,
+          agent,
         });
         return;
       }
@@ -177,13 +178,11 @@ export default function Chat({ agent }: ChatProps) {
 
   const handleModelSelect = (model: string) => {
     setShowModelSelector(false);
-    // Clear chat history when switching models
-    clearHistory();
     // Set the new model on the agent
     agent.setModel(model);
     addMessage({
       role: 'system',
-      content: `Switched to model: ${model}. Chat history has been cleared.`,
+      content: `Switched to model: ${model}. Your chat history has been preserved.`,
     });
   };
 

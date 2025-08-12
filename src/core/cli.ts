@@ -65,6 +65,16 @@ async function startChat(
     const agent = await Agent.create(defaultModel, temperature, system, debug);
     logger.info('Agent created successfully');
     
+    // Try to restore last session
+    try {
+      const sessionRestored = await agent.restoreLastSession();
+      if (sessionRestored) {
+        logger.info('Previous session restored successfully');
+      }
+    } catch (error) {
+      logger.debug('Failed to restore session, starting fresh:', error);
+    }
+    
     // Register cleanup callback for graceful shutdown
     onInterrupt(async () => {
       logger.info('Cleaning up agent during shutdown...');

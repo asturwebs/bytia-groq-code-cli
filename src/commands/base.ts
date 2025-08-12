@@ -1,3 +1,5 @@
+import { Agent } from '../core/agent.js';
+
 export interface CommandContext {
   addMessage: (message: any) => void;
   clearHistory: () => void;
@@ -5,6 +7,7 @@ export interface CommandContext {
   setShowModelSelector?: (show: boolean) => void;
   toggleReasoning?: () => void;
   showReasoning?: boolean;
+  agent?: Agent;
 }
 
 export interface CommandDefinition {

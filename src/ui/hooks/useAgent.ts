@@ -273,6 +273,13 @@ export function useAgent(
       if (onCompleteRequest) {
         onCompleteRequest();
       }
+      
+      // Auto-save session after each interaction
+      try {
+        agent.saveCurrentSession();
+      } catch (error) {
+        // Silently ignore session save errors to not interrupt user experience
+      }
     }
   }, [agent, isProcessing, addMessage, updateMessage, onStartRequest, onAddApiTokens, onPauseRequest, onResumeRequest, onCompleteRequest]);
 

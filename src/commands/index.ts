@@ -16,12 +16,13 @@ import {
   agentExportCommand,
   agentImportCommand
 } from './definitions/agent.js';
-import { 
+import {
   providersCommand,
   switchCommand,
   modelsCommand,
   providerHelpCommand
 } from './definitions/providers.js';
+import { sessionCommand } from './definitions/session.js';
 import { AgentManager } from '../utils/agent-manager.js';
 
 const availableCommands: CommandDefinition[] = [
@@ -32,6 +33,8 @@ const availableCommands: CommandDefinition[] = [
   reasoningCommand,
   updateCommand,
   versionCommand,
+  // Session management
+  sessionCommand,
   // Agent management commands
   agentCommand,
   agentsCommand,
@@ -255,6 +258,12 @@ function handleProviderCommands(cmd: string, args: string, context: CommandConte
     case 'model-list':
       // Let the models command handle search or listing
       modelsCommand.handler(context);
+      return true;
+      
+    case 'model':
+      // Handle both /model (legacy) and /model <name> (new)
+      // Let the updated model command handle both cases
+      modelCommand.handler(context);
       return true;
       
     default:
