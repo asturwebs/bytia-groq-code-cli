@@ -4,6 +4,9 @@ import { validateReadBeforeEdit, getReadBeforeEditError } from '../tools/validat
 import { ALL_TOOL_SCHEMAS, DANGEROUS_TOOLS, APPROVAL_REQUIRED_TOOLS } from '../tools/tool-schemas.js';
 import { ConfigManager } from '../utils/local-settings.js';
 import { AgentManager } from '../utils/agent-manager.js';
+import { ProviderManager } from './provider-manager.js';
+import { LLMProvider, ChatOptions } from '../providers/index.js';
+import { logger } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -15,8 +18,9 @@ interface Message {
 }
 
 export class Agent {
-  private client: Groq | null = null;
+  private providerManager: ProviderManager;
   private messages: Message[] = [];
+  private client: Groq | null = null;
   private apiKey: string | null = null;
   private model: string;
   private temperature: number;
@@ -43,6 +47,7 @@ export class Agent {
     this.model = model;
     this.temperature = temperature;
     this.configManager = new ConfigManager();
+    this.providerManager = new ProviderManager();
     
     // Set debug mode
     debugEnabled = debug || false;
@@ -219,6 +224,51 @@ When asked about your identity, you should identify yourself as a coding assista
 
   public setSessionAutoApprove(enabled: boolean): void {
     this.sessionAutoApprove = enabled;
+  }
+
+  // Provider management methods
+  public async getProviderManager(): Promise<ProviderManager> {
+    // Load provider configs if not loaded yet
+    await this.providerManager.loadConfig();
+    return this.providerManager;
+  }
+
+  public async detectProviders() {
+    await this.providerManager.loadConfig();
+    return this.providerManager.detectProviders();
+  }
+
+  public async listAllModels() {
+    await this.providerManager.loadConfig();
+    return this.providerManager.getAllModels();
+  }
+
+  public async findModels(query: string) {
+    await this.providerManager.loadConfig();
+    return this.providerManager.findModels(query);
+  }
+
+  public async getProvidersStatus() {
+    await this.providerManager.loadConfig();
+    return this.providerManager.getStatusSummary();
+  }
+
+  public async switchProvider(providerName: string) {
+    await this.providerManager.loadConfig();
+    const activeProvider = this.providerManager.getActiveProvider();
+    if (activeProvider?.name === providerName) {
+      return { success: true, message: `Already using ${providerName}` };
+    }
+
+    try {
+      await this.providerManager.setActiveProvider(providerName as any);
+      return { success: true, message: `Switched to ${providerName} provider` };
+    } catch (error) {
+      return { 
+        success: false, 
+        message: `Failed to switch to ${providerName}: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      };
+    }
   }
 
   public interrupt(): void {
