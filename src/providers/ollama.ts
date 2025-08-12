@@ -213,14 +213,37 @@ export class OllamaProvider extends LLMProvider {
         }
       };
     } catch (error) {
-      logger.error('Ollama chat request failed:', error);
+      logger.error('Ollama chat request failed:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        model: options.model,
+        baseUrl: this.baseUrl,
+        messagesCount: options.messages.length
+      });
       
       if (error instanceof Error && error.name === 'AbortError') {
         throw error;
       }
       
+      // More descriptive error message based on common issues
+      let errorMessage = `Ollama API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      
+      if (error instanceof Error) {
+        if (error.message.includes('ECONNREFUSED')) {
+          errorMessage = 'Cannot connect to Ollama. Make sure Ollama is running on localhost:11434';
+        } else if (error.message.includes('model')) {
+          errorMessage = `Model "${options.model}" not found. Make sure the model is pulled in Ollama: ollama pull ${options.model}`;
+        } else if (error.message.includes('404')) {
+          errorMessage = `API endpoint not found. Check Ollama version and API compatibility.`;
+        } else if (error.message.includes('failed to allocate') || error.message.includes('Metal buffer')) {
+          errorMessage = `Model "${options.model}" is too large for available GPU memory. Try:\n• A smaller model (e.g., /model gemma3:1b)\n• Use CPU: restart Ollama with OLLAMA_GPU_LAYERS=0\n• Free up GPU memory by closing other applications`;
+        } else if (error.message.includes('llama runner process has terminated')) {
+          errorMessage = `Model "${options.model}" crashed during execution. This usually indicates insufficient memory. Try a smaller model or restart Ollama with CPU mode.`;
+        }
+      }
+      
       throw new ProviderError(
-        `Ollama API request failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        errorMessage,
         this.name,
         'CHAT_REQUEST_ERROR'
       );

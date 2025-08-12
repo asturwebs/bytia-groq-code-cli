@@ -138,12 +138,27 @@ export class LMStudioProvider extends LLMProvider {
         contextLength: this.getContextLength(model.id),
         supportsFunctions: false, // LM Studio doesn't support function calling in OpenAI format
         ownedBy: model.owned_by,
-        created: new Date(model.created * 1000).toISOString()
+        created: model.created && !isNaN(model.created) ? new Date(model.created * 1000).toISOString() : new Date().toISOString()
       }));
     } catch (error) {
-      logger.error('Failed to list LM Studio models:', error);
+      logger.error('Failed to list LM Studio models:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        baseUrl: this.baseUrl
+      });
+      
+      let errorMessage = 'Failed to fetch models from LM Studio. Make sure LM Studio is running with local server enabled and a model is loaded.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('ECONNREFUSED')) {
+          errorMessage = 'Cannot connect to LM Studio. Make sure LM Studio is running and local server is enabled on port 1234.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'LM Studio connection timed out. Check if the local server is responding.';
+        }
+      }
+      
       throw new ProviderError(
-        'Failed to fetch models from LM Studio. Make sure LM Studio is running with local server enabled and a model is loaded.',
+        errorMessage,
         this.name,
         'MODELS_FETCH_ERROR'
       );
