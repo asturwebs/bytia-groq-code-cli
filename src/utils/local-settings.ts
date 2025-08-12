@@ -8,6 +8,17 @@ interface Config {
   defaultModel?: string;
   lastVersionCheck?: string; // ISO timestamp
   lastVersionWarning?: string; // ISO timestamp of last warning shown
+  // New provider system configuration
+  providers?: Array<{
+    name: string;
+    enabled: boolean;
+    priority: number;
+    config?: Record<string, any>;
+  }>;
+  activeProvider?: string;
+  // Provider-specific settings
+  ollamaBaseUrl?: string;
+  lmstudioBaseUrl?: string;
 }
 
 const CONFIG_DIR = '.groq'; // In home directory
@@ -214,4 +225,72 @@ export class ConfigManager {
       logger.warn('Failed to save last version warning', error);
     }
   }
+
+  /**
+   * Get the full configuration object
+   */
+  public getConfig(): Config {
+    try {
+      if (!fs.existsSync(this.configPath)) {
+        return {};
+      }
+
+      const configData = fs.readFileSync(this.configPath, 'utf8');
+      return JSON.parse(configData);
+    } catch (error) {
+      logger.warn('Failed to read config file', error);
+      return {};
+    }
+  }
+
+  /**
+   * Set the full configuration object
+   */
+  public setConfig(config: Config): void {
+    try {
+      this.ensureConfigDir();
+      fs.writeFileSync(this.configPath, JSON.stringify(config, null, 2), {
+        mode: 0o600
+      });
+    } catch (error) {
+      throw new Error(`Failed to save config: ${error}`);
+    }
+  }
+
+  /**
+   * Update specific config fields
+   */
+  public updateConfig(updates: Partial<Config>): void {
+    try {
+      const currentConfig = this.getConfig();
+      const newConfig = { ...currentConfig, ...updates };
+      this.setConfig(newConfig);
+    } catch (error) {
+      throw new Error(`Failed to update config: ${error}`);
+    }
+  }
+}
+
+// Global instance for backward compatibility
+const globalConfigManager = new ConfigManager();
+
+/**
+ * Get the global configuration object
+ */
+export function getLocalSettings(): Config {
+  return globalConfigManager.getConfig();
+}
+
+/**
+ * Set the global configuration object
+ */
+export function setLocalSettings(config: Config): void {
+  globalConfigManager.setConfig(config);
+}
+
+/**
+ * Update specific fields in the global configuration
+ */
+export function updateLocalSettings(updates: Partial<Config>): void {
+  globalConfigManager.updateConfig(updates);
 }

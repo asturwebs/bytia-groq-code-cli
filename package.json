@@ -28,11 +28,13 @@
 		"scripts"
 	],
 	"dependencies": {
+		"@types/node-fetch": "^2.6.13",
 		"chalk": "^5.4.1",
 		"commander": "^14.0.0",
 		"groq-sdk": "^0.27.0",
 		"ink": "^6.0.1",
 		"meow": "^11.0.0",
+		"node-fetch": "^3.3.2",
 		"react": "^19.1.0"
 	},
 	"devDependencies": {
