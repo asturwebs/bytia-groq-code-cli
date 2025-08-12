@@ -98,7 +98,11 @@ export class Agent {
       // AgentManager not available, use default
     }
 
-    return `You are a coding assistant powered by ${this.model} on Groq. Tools are available to you. Use tools to complete tasks.
+    // Get current provider name dynamically
+    const activeProvider = this.providerManager.getActiveProvider();
+    const providerName = activeProvider ? activeProvider.displayName : 'Groq';
+
+    return `You are a coding assistant powered by ${this.model} on ${providerName}. Tools are available to you. Use tools to complete tasks.
 
 CRITICAL: For ANY implementation request (building apps, creating components, writing code), you MUST use tools to create actual files. NEVER provide text-only responses for coding tasks that require implementation.
 
@@ -160,7 +164,7 @@ INTERACTIVE ENVIRONMENT AWARENESS:
 - Focus on solving the immediate problem efficiently
 - Don't generate markdown tables or overly formatted text
 
-When asked about your identity, you should identify yourself as a coding assistant running on the ${this.model} model via Groq with robust interrupt handling and user control features.`;
+When asked about your identity, you should identify yourself as a coding assistant running on the ${this.model} model via ${providerName} with robust interrupt handling and user control features.`;
   }
 
 
@@ -249,6 +253,79 @@ When asked about your identity, you should identify yourself as a coding assista
 
   public setSessionAutoApprove(enabled: boolean): void {
     this.sessionAutoApprove = enabled;
+  }
+
+  /**
+   * Save current session state
+   */
+  public saveCurrentSession(): void {
+    try {
+      const activeProvider = this.providerManager.getActiveProvider();
+      const providerName = activeProvider?.name || 'groq';
+      
+      // Filter out system messages for saving to avoid huge configs
+      const conversationHistory = this.messages.filter(msg => 
+        msg.role !== 'system' || !msg.content.includes('coding assistant')
+      );
+      
+      this.configManager.saveSession(providerName, this.model, conversationHistory);
+    } catch (error) {
+      debugLog('Failed to save session:', error);
+    }
+  }
+
+  /**
+   * Restore last session if available and recent
+   */
+  public async restoreLastSession(): Promise<boolean> {
+    try {
+      if (!this.configManager.shouldRestoreSession()) {
+        return false;
+      }
+      
+      const lastSession = this.configManager.getLastSession();
+      if (!lastSession) {
+        return false;
+      }
+      
+      debugLog('Restoring session:', {
+        provider: lastSession.provider,
+        model: lastSession.model,
+        messagesCount: lastSession.conversationHistory?.length || 0
+      });
+      
+      // Restore provider
+      try {
+        await this.providerManager.setActiveProvider(lastSession.provider as any);
+      } catch (error) {
+        debugLog('Failed to restore provider, using default');
+      }
+      
+      // Restore model
+      this.setModel(lastSession.model);
+      
+      // Restore conversation history
+      if (lastSession.conversationHistory && lastSession.conversationHistory.length > 0) {
+        // Keep system message but add restored history
+        const systemMessages = this.messages.filter(msg => msg.role === 'system');
+        this.messages = [
+          ...systemMessages,
+          ...lastSession.conversationHistory
+        ];
+      }
+      
+      return true;
+    } catch (error) {
+      debugLog('Failed to restore session:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Clear saved session
+   */
+  public clearSavedSession(): void {
+    this.configManager.clearSession();
   }
 
   // Provider management methods

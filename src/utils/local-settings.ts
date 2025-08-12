@@ -19,6 +19,19 @@ interface Config {
   // Provider-specific settings
   ollamaBaseUrl?: string;
   lmstudioBaseUrl?: string;
+  // Session persistence
+  lastSession?: {
+    provider: string;
+    model: string;
+    timestamp: string;
+    conversationHistory?: Array<{
+      role: 'system' | 'user' | 'assistant' | 'tool';
+      content: string;
+      timestamp?: string;
+      tool_calls?: any[];
+      tool_call_id?: string;
+    }>;
+  };
 }
 
 const CONFIG_DIR = '.groq'; // In home directory
@@ -267,6 +280,88 @@ export class ConfigManager {
       this.setConfig(newConfig);
     } catch (error) {
       throw new Error(`Failed to update config: ${error}`);
+    }
+  }
+
+  /**
+   * Save the current session state
+   */
+  public saveSession(provider: string, model: string, conversationHistory?: any[]): void {
+    try {
+      const config = this.getConfig();
+      
+      // Limit conversation history to last 20 messages to avoid huge config files
+      const limitedHistory = conversationHistory ? conversationHistory.slice(-20) : undefined;
+      
+      config.lastSession = {
+        provider,
+        model,
+        timestamp: new Date().toISOString(),
+        conversationHistory: limitedHistory?.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date().toISOString(),
+          tool_calls: msg.tool_calls,
+          tool_call_id: msg.tool_call_id
+        }))
+      };
+      
+      this.setConfig(config);
+      logger.debug(`Session saved: ${provider}/${model} with ${limitedHistory?.length || 0} messages`);
+    } catch (error) {
+      logger.warn('Failed to save session', error);
+    }
+  }
+
+  /**
+   * Get the last session state
+   */
+  public getLastSession(): {
+    provider: string;
+    model: string;
+    timestamp: string;
+    conversationHistory?: any[];
+  } | null {
+    try {
+      const config = this.getConfig();
+      return config.lastSession || null;
+    } catch (error) {
+      logger.warn('Failed to read last session', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear saved session
+   */
+  public clearSession(): void {
+    try {
+      const config = this.getConfig();
+      delete config.lastSession;
+      this.setConfig(config);
+      logger.debug('Session cleared');
+    } catch (error) {
+      logger.warn('Failed to clear session', error);
+    }
+  }
+
+  /**
+   * Check if a session should be restored (not older than 24 hours)
+   */
+  public shouldRestoreSession(): boolean {
+    try {
+      const lastSession = this.getLastSession();
+      if (!lastSession) return false;
+      
+      const sessionTime = new Date(lastSession.timestamp);
+      const now = new Date();
+      const hoursDiff = (now.getTime() - sessionTime.getTime()) / (1000 * 60 * 60);
+      
+      // Restore if session is less than 24 hours old
+      return hoursDiff < 24;
+    } catch (error) {
+      logger.warn('Failed to check session restore', error);
+      return false;
     }
   }
 }
