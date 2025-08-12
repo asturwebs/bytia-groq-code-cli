@@ -193,21 +193,12 @@ When asked about your identity, you should identify yourself as a coding assista
     // Save to config manager for backward compatibility
     this.configManager.setApiKey(apiKey);
     
-    // Update the provider manager configuration
-    await this.providerManager.loadConfig();
-    const config = this.providerManager.getConfig();
-    
-    // Set Groq API key specifically
-    if (!config.providers.groq) {
-      config.providers.groq = {};
-    }
-    config.providers.groq.apiKey = apiKey;
-    
-    // Save updated config
-    await this.providerManager.saveConfig();
+    // Set API key for Groq provider using the new ProviderManager method
+    await this.providerManager.setProviderApiKey('groq', apiKey);
     
     debugLog('API key set and provider manager updated');
   }
+
 
   public async saveApiKey(apiKey: string): Promise<void> {
     await this.setApiKey(apiKey);
@@ -216,15 +207,9 @@ When asked about your identity, you should identify yourself as a coding assista
   public async clearApiKey(): Promise<void> {
     this.configManager.clearApiKey();
     
-    // Also clear from provider manager
-    await this.providerManager.loadConfig();
-    const config = this.providerManager.getConfig();
+    // Clear API key from Groq provider using the new ProviderManager method
+    await this.providerManager.clearProviderApiKey('groq');
     
-    if (config.providers.groq) {
-      delete config.providers.groq.apiKey;
-    }
-    
-    await this.providerManager.saveConfig();
     debugLog('API key cleared from both config manager and provider manager');
   }
 

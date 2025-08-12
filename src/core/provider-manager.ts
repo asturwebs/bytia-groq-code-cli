@@ -58,6 +58,9 @@ export class ProviderManager {
           }));
         logger.debug(`Loaded ${this.providerConfigs.length} provider configurations`);
       }
+      
+      // Apply API keys to provider instances
+      await this.applyApiKeysToProviders();
     } catch (error) {
       logger.warn('Could not load provider configs, using defaults:', error);
     }
@@ -382,5 +385,85 @@ export class ProviderManager {
     
     logger.error('Failover failed: no alternative providers available');
     return null;
+  }
+
+  /**
+   * Apply saved API keys to provider instances
+   */
+  private async applyApiKeysToProviders(): Promise<void> {
+    try {
+      const settings = await getLocalSettings();
+      
+      for (const providerConfig of this.providerConfigs) {
+        if (providerConfig.config?.apiKey) {
+          const provider = this.getProviderInstance(providerConfig.name);
+          
+          // Check if provider has setApiKey method
+          if (typeof (provider as any).setApiKey === 'function') {
+            (provider as any).setApiKey(providerConfig.config.apiKey);
+            logger.debug(`Applied API key to ${providerConfig.name} provider`);
+          }
+        }
+      }
+    } catch (error) {
+      logger.error('Failed to apply API keys to providers:', error);
+    }
+  }
+
+  /**
+   * Set API key for a specific provider
+   */
+  async setProviderApiKey(providerName: ProviderName, apiKey: string): Promise<void> {
+    // Find or create provider config
+    let providerConfig = this.providerConfigs.find(config => config.name === providerName);
+    
+    if (!providerConfig) {
+      providerConfig = {
+        name: providerName,
+        enabled: true,
+        priority: this.providerConfigs.length + 1,
+        config: {}
+      };
+      this.providerConfigs.push(providerConfig);
+    }
+    
+    // Set API key in config
+    if (!providerConfig.config) {
+      providerConfig.config = {};
+    }
+    providerConfig.config.apiKey = apiKey;
+    
+    // Apply to provider instance
+    const provider = this.getProviderInstance(providerName);
+    if (typeof (provider as any).setApiKey === 'function') {
+      (provider as any).setApiKey(apiKey);
+    }
+    
+    // Save config
+    await this.saveConfig();
+    
+    logger.debug(`Set API key for ${providerName} provider`);
+  }
+
+  /**
+   * Clear API key for a specific provider
+   */
+  async clearProviderApiKey(providerName: ProviderName): Promise<void> {
+    const providerConfig = this.providerConfigs.find(config => config.name === providerName);
+    
+    if (providerConfig?.config?.apiKey) {
+      delete providerConfig.config.apiKey;
+      
+      // Clear from provider instance
+      const provider = this.getProviderInstance(providerName);
+      if (typeof (provider as any).clearApiKey === 'function') {
+        (provider as any).clearApiKey();
+      }
+      
+      // Save config
+      await this.saveConfig();
+      
+      logger.debug(`Cleared API key for ${providerName} provider`);
+    }
   }
 }
