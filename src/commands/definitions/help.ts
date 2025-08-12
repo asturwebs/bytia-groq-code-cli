@@ -6,7 +6,10 @@ export const helpCommand: CommandDefinition = {
   description: 'Show help and available commands',
   handler: ({ addMessage }: CommandContext) => {
     const commands = getAvailableCommands();
-    const commandList = commands.map(cmd => `/${cmd.command} - ${cmd.description}`).join('\n');
+    const commandList = commands.map(cmd => {
+      const aliases = cmd.aliases ? ` (aliases: ${cmd.aliases.map(a => `/${a}`).join(', ')})` : '';
+      return `/${cmd.command}${aliases} - ${cmd.description}`;
+    }).join('\n');
     
     addMessage({
       role: 'system',

@@ -43,23 +43,93 @@ A few customization ideas to get started:
 
 ## Installation
 
+### Quick Install
+```bash
+# Install globally via npm
+npm install -g groq-code-cli
+
+# Or try it out without installing
+npx groq-code-cli@latest
+```
+
 ### For Development (Recommended)
+
+#### Linux/macOS
 ```bash
 git clone https://github.com/build-with-groq/groq-code-cli.git
 cd groq-code-cli
+./install.sh    # Automated installer with various options
+```
+
+Or manually:
+```bash
 npm install
 npm run build
 npm link        # Enables the `groq` command in any directory
 ```
 
+#### Windows
+
+**PowerShell (Recommended):**
+```powershell
+git clone https://github.com/build-with-groq/groq-code-cli.git
+cd groq-code-cli
+.\install.ps1    # Automated PowerShell installer
+```
+
+**Command Prompt/Git Bash:**
+```cmd
+git clone https://github.com/build-with-groq/groq-code-cli.git
+cd groq-code-cli
+install.bat     # Automated batch installer
+```
+
+### Auto-Dev
 ```bash
 # Run this in the background during development to automatically apply any changes to the source code
 npm run dev  
 ```
 
-### To Try it Out
+This watch mode automatically rebuilds the TypeScript code whenever you make changes, enabling rapid development and testing. See [docs/dev-auto.md](docs/dev-auto.md) for more details about the auto-development workflow.
+
+### Self-Update
 ```bash
-npx groq-code-cli@latest
+# Update to the latest version (if installed globally)
+npm update -g groq-code-cli
+
+# Or for development installations
+git pull origin main
+npm install
+npm run build
+```
+
+### Uninstall
+
+#### Linux/macOS
+```bash
+# If installed globally
+npm uninstall -g groq-code-cli
+
+# If using development installation with automated installer
+./uninstall.sh    # Automated uninstaller (with dry-run option)
+
+# Or manually
+npm unlink  # Remove the global symlink
+# Then delete the cloned directory
+```
+
+#### Windows
+
+**PowerShell:**
+```powershell
+# Automated uninstaller
+.\uninstall.ps1    # Use -DryRun to preview what will be removed
+```
+
+**Manual removal:**
+```bash
+npm unlink -g groq-code-cli
+# Then delete the cloned directory
 ```
 
 ## Usage

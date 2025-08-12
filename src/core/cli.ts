@@ -5,6 +5,8 @@ import { render } from 'ink';
 import React from 'react';
 import { Agent } from './agent.js';
 import App from '../ui/App.js';
+import { logger, LogLevel } from '../utils/logger.js';
+import { getCurrentVersion, performBackgroundVersionCheck, VersionInfo } from '../utils/version.js';
 
 const program = new Command();
 
@@ -13,6 +15,14 @@ async function startChat(
   system: string | null,
   debug?: boolean
 ): Promise<void> {
+  // Configure logger based on debug mode
+  if (debug) {
+    logger.setLevel(LogLevel.DEBUG);
+    logger.setFileLogging(true, 'groq-cli-debug.log');
+    logger.debug('Debug mode enabled');
+  }
+  
+  // Show the CLI banner
   console.log(chalk.hex('#FF4500')(`                             
   ██████    ██████   ██████   ██████
  ███░░███░░███░░░██ ███░░███ ███░░███ 
@@ -32,14 +42,27 @@ async function startChat(
 ░░██████ ░░██████ ░░███████ ░░██████  
  ░░░░░░   ░░░░░░   ░░░░░░░░  ░░░░░░   
 `));
+
+  // Perform non-blocking background version check
+  performBackgroundVersionCheck((versionInfo: VersionInfo) => {
+    console.log(chalk.yellow(`\n⚠️  Update available! Current: ${versionInfo.current}, Latest: ${versionInfo.latest}`));
+    console.log(chalk.yellow(`   Run '/update' command or 'npm install -g groq-code-cli@latest' to upgrade.\n`));
+  }).catch(() => {
+    // Silently ignore version check failures
+  });
     
   let defaultModel = 'moonshotai/kimi-k2-instruct';
   try {
+    logger.info('Initializing Groq Code CLI...');
+    logger.debug('Configuration', { temperature, system, debug, model: defaultModel });
+    
     // Create agent (API key will be checked on first message)
     const agent = await Agent.create(defaultModel, temperature, system, debug);
+    logger.info('Agent created successfully');
 
     render(React.createElement(App, { agent }));
   } catch (error) {
+    logger.error('Failed to initialize agent', error);
     console.log(chalk.red(`Error initializing agent: ${error}`));
     process.exit(1);
   }
@@ -48,7 +71,7 @@ async function startChat(
 program
   .name('groq')
   .description('Groq Code CLI')
-  .version('1.0.2')
+  .version(getCurrentVersion())
   .option('-t, --temperature <temperature>', 'Temperature for generation', parseFloat, 1.0)
   .option('-s, --system <message>', 'Custom system message')
   .option('-d, --debug', 'Enable debug logging to debug-agent.log in current directory')
