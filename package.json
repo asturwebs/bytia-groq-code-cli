@@ -1,6 +1,8 @@
 {
 	"name": "groq-code-cli",
-	"version": "1.0.2",
+	"version": "2.0.0",
+	"description": "A powerful multi-LLM command-line interface with support for Groq, Ollama, and LM Studio for AI-powered coding assistance",
+	"keywords": ["ai", "llm", "groq", "ollama", "lmstudio", "cli", "coding", "assistant", "terminal", "multi-provider"],
 	"license": "MIT",
 	"repository": {
 		"type": "git",

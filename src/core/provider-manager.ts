@@ -69,7 +69,19 @@ export class ProviderManager {
   async saveConfig(): Promise<void> {
     try {
       const settings = await getLocalSettings();
+      
+      // Save provider configs array structure
       settings.providers = this.providerConfigs;
+      
+      // Also save current config for getConfig() compatibility
+      const configData = this.getConfig();
+      for (const [providerName, providerConfig] of Object.entries(configData.providers)) {
+        const configIndex = this.providerConfigs.findIndex(p => p.name === providerName);
+        if (configIndex >= 0) {
+          this.providerConfigs[configIndex].config = providerConfig;
+        }
+      }
+      
       await setLocalSettings(settings);
       logger.debug('Saved provider configurations');
     } catch (error) {
@@ -205,6 +217,19 @@ export class ProviderManager {
    */
   getProvider(name: ProviderName): LLMProvider {
     return this.getProviderInstance(name);
+  }
+
+  /**
+   * Get the current configuration object
+   */
+  getConfig(): { providers: Record<string, any> } {
+    const config: Record<string, any> = {};
+    
+    for (const providerConfig of this.providerConfigs) {
+      config[providerConfig.name] = providerConfig.config || {};
+    }
+    
+    return { providers: config };
   }
 
   /**

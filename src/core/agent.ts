@@ -10,9 +10,13 @@ import { logger } from '../utils/logger.js';
 import fs from 'fs';
 import path from 'path';
 
-interface Message {
+// Define ChatMessage interface locally since it's not exported from providers
+interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
+}
+
+interface Message extends ChatMessage {
   tool_calls?: any[];
   tool_call_id?: string;
 }
@@ -20,8 +24,6 @@ interface Message {
 export class Agent {
   private providerManager: ProviderManager;
   private messages: Message[] = [];
-  private client: Groq | null = null;
-  private apiKey: string | null = null;
   private model: string;
   private temperature: number;
   private sessionAutoApprove: boolean = false;
@@ -180,23 +182,46 @@ When asked about your identity, you should identify yourself as a coding assista
     this.onApiUsage = callbacks.onApiUsage;
   }
 
-  public setApiKey(apiKey: string): void {
+  public async setApiKey(apiKey: string): Promise<void> {
     debugLog('Setting API key in agent...');
     debugLog('API key provided:', apiKey ? `${apiKey.substring(0, 8)}...` : 'empty');
-    this.apiKey = apiKey;
-    this.client = new Groq({ apiKey });
-    debugLog('Groq client initialized with provided API key');
-  }
-
-  public saveApiKey(apiKey: string): void {
+    
+    // Save to config manager for backward compatibility
     this.configManager.setApiKey(apiKey);
-    this.setApiKey(apiKey);
+    
+    // Update the provider manager configuration
+    await this.providerManager.loadConfig();
+    const config = this.providerManager.getConfig();
+    
+    // Set Groq API key specifically
+    if (!config.providers.groq) {
+      config.providers.groq = {};
+    }
+    config.providers.groq.apiKey = apiKey;
+    
+    // Save updated config
+    await this.providerManager.saveConfig();
+    
+    debugLog('API key set and provider manager updated');
   }
 
-  public clearApiKey(): void {
+  public async saveApiKey(apiKey: string): Promise<void> {
+    await this.setApiKey(apiKey);
+  }
+
+  public async clearApiKey(): Promise<void> {
     this.configManager.clearApiKey();
-    this.apiKey = null;
-    this.client = null;
+    
+    // Also clear from provider manager
+    await this.providerManager.loadConfig();
+    const config = this.providerManager.getConfig();
+    
+    if (config.providers.groq) {
+      delete config.providers.groq.apiKey;
+    }
+    
+    await this.providerManager.saveConfig();
+    debugLog('API key cleared from both config manager and provider manager');
   }
 
   public clearHistory(): void {
@@ -291,27 +316,32 @@ When asked about your identity, you should identify yourself as a coding assista
     // Reset interrupt flag at the start of a new chat
     this.isInterrupted = false;
     
-    // Check API key on first message send
-    if (!this.client) {
-      debugLog('Initializing Groq client...');
-      // Try environment variable first
-      const envApiKey = process.env.GROQ_API_KEY;
-      if (envApiKey) {
-        debugLog('Using API key from environment variable');
-        this.setApiKey(envApiKey);
+    // Load provider manager config and ensure we have an active provider
+    await this.providerManager.loadConfig();
+    const activeProvider = this.providerManager.getActiveProvider();
+    
+    if (!activeProvider) {
+      debugLog('No active provider available, trying to set default');
+      
+      // Try to detect and set a working provider
+      const detection = await this.providerManager.detectProviders();
+      const workingProvider = detection.find(p => p.available && p.status.connected);
+      
+      if (workingProvider) {
+        debugLog(`Setting ${workingProvider.provider} as active provider`);
+        await this.providerManager.setActiveProvider(workingProvider.provider as any);
       } else {
-        // Try config file
-        debugLog('Environment variable GROQ_API_KEY not found, checking config file');
+        // Legacy fallback: check for Groq API key
+        const envApiKey = process.env.GROQ_API_KEY;
         const configApiKey = this.configManager.getApiKey();
-        if (configApiKey) {
-          debugLog('Using API key from config file');
-          this.setApiKey(configApiKey);
+        
+        if (envApiKey || configApiKey) {
+          debugLog('Found Groq API key, setting Groq as active provider');
+          await this.providerManager.setActiveProvider('groq');
         } else {
-          debugLog('No API key found anywhere');
-          throw new Error('No API key available. Please use /login to set your Groq API key.');
+          throw new Error('No LLM provider available. Please use /providers to see setup options or /login to set your Groq API key.');
         }
       }
-      debugLog('Groq client initialized successfully');
     }
 
     // Add user message
@@ -330,47 +360,33 @@ When asked about your identity, you should identify yourself as a coding assista
         }
         
         try {
-          // Check client exists
-          if (!this.client) {
-            throw new Error('Groq client not initialized');
+          // Get the active provider
+          const activeProvider = this.providerManager.getActiveProvider();
+          if (!activeProvider) {
+            throw new Error('No active provider available');
           }
 
-          debugLog('Making API call to Groq with model:', this.model);
+          debugLog('Making API call with provider:', activeProvider.name);
+          debugLog('Using model:', this.model);
           debugLog('Messages count:', this.messages.length);
           debugLog('Last few messages:', this.messages.slice(-3));
-          
-          // Prepare request body for curl logging
-          const requestBody = {
-            model: this.model,
-            messages: this.messages,
-            tools: ALL_TOOL_SCHEMAS,
-            tool_choice: 'auto' as const,
-            temperature: this.temperature,
-            max_tokens: 8000,
-            stream: false as const
-          };
-          
-          // Log equivalent curl command
-          this.requestCount++;
-          const curlCommand = generateCurlCommand(this.apiKey!, requestBody, this.requestCount);
-          if (curlCommand) {
-            debugLog('Equivalent curl command:', curlCommand);
-          }
           
           // Create AbortController for this request
           this.currentAbortController = new AbortController();
           
-          const response = await this.client.chat.completions.create({
+          // Prepare chat options
+          const chatOptions: ChatOptions = {
             model: this.model,
-            messages: this.messages as any,
+            messages: this.messages,
             tools: ALL_TOOL_SCHEMAS,
-            tool_choice: 'auto',
             temperature: this.temperature,
-            max_tokens: 8000,
-            stream: false
-          }, {
-            signal: this.currentAbortController.signal
-          });
+            max_tokens: 8000
+          };
+          
+          this.requestCount++;
+          debugLog('Calling provider chat method with options:', chatOptions);
+          
+          const response = await activeProvider.chat(chatOptions, this.currentAbortController.signal);
 
           debugLog('Full API response received:', response);
           debugLog('Response usage:', response.usage);

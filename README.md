@@ -1,9 +1,9 @@
 <h2 align="center">
  <br>
- <img src="docs/thumbnail.png" alt="Groq Code CLI" width="400">
+ <img src="docs/thumbnail.png" alt="Multi-LLM Code CLI" width="400">
  <br>
  <br>
- Groq Code CLI: A highly customizable, lightweight, and open-source coding CLI powered by Groq for instant iteration.
+ Multi-LLM Code CLI: A highly customizable, lightweight, and open-source coding CLI with multi-provider support (Groq, Ollama, LM Studio) for instant iteration.
  <br>
 </h2>
 
@@ -183,11 +183,21 @@ export GROQ_API_KEY=your_api_key_here
 ```
 
 ### Available Commands
+
+#### Core Commands
 - `/help` - Show help and available commands
-- `/login` - Login with your credentials
-- `/model` - Select your Groq model
+- `/login` - Login with your Groq API key (legacy support)
+- `/model` - Select your model
 - `/clear` - Clear chat history and context
 - `/reasoning` - Toggle display of reasoning content in messages
+
+#### 🔥 **NEW: Multi-Provider Commands**
+- `/providers` - List all available LLM providers and their status
+- `/switch <provider>` - Switch between Groq, Ollama, and LM Studio
+- `/models [query]` - List or search models from all providers
+- `/provider-help` - Setup guide for all providers
+
+> **🌟 Quick Start**: Use `/providers` to see what's available, then `/switch ollama` to use local models!
 
 ### 🚨 Interrupt Controls
 

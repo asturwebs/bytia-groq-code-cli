@@ -290,8 +290,8 @@ export function useAgent(
     }
   }, [pendingMaxIterations]);
 
-  const setApiKey = useCallback((apiKey: string) => {
-    agent.setApiKey(apiKey);
+  const setApiKey = useCallback(async (apiKey: string) => {
+    await agent.setApiKey(apiKey);
   }, [agent]);
 
   const toggleAutoApprove = useCallback(() => {

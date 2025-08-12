@@ -16,6 +16,12 @@ import {
   agentExportCommand,
   agentImportCommand
 } from './definitions/agent.js';
+import { 
+  providersCommand,
+  switchCommand,
+  modelsCommand,
+  providerHelpCommand
+} from './definitions/providers.js';
 import { AgentManager } from '../utils/agent-manager.js';
 
 const availableCommands: CommandDefinition[] = [
@@ -35,6 +41,11 @@ const availableCommands: CommandDefinition[] = [
   systemResetCommand,
   agentExportCommand,
   agentImportCommand,
+  // Provider management commands
+  providersCommand,
+  switchCommand,
+  modelsCommand,
+  providerHelpCommand,
 ];
 
 export function getAvailableCommands(): CommandDefinition[] {
@@ -61,8 +72,16 @@ export function handleSlashCommand(
     content: command,
   });
   
+  // Store the full command in context for provider commands to access
+  (context as any).lastCommand = command;
+  
   // Handle agent commands with arguments
   if (handleAgentCommands(cmd, args, context)) {
+    return;
+  }
+  
+  // Handle provider commands with arguments
+  if (handleProviderCommands(cmd, args, context)) {
     return;
   }
   
@@ -213,6 +232,33 @@ function handleAgentCommands(cmd: string, args: string, context: CommandContext)
       
     default:
       return false; // Not an agent command
+  }
+}
+
+/**
+ * Maneja comandos de proveedores con argumentos
+ */
+function handleProviderCommands(cmd: string, args: string, context: CommandContext): boolean {
+  switch (cmd) {
+    case 'switch':
+    case 'sw':
+    case 'provider':
+      if (args) {
+        // Let the provider command handle the switch
+        switchCommand.handler(context);
+        return true;
+      }
+      return false; // Let the regular handler show the help
+      
+    case 'models':
+    case 'm':
+    case 'model-list':
+      // Let the models command handle search or listing
+      modelsCommand.handler(context);
+      return true;
+      
+    default:
+      return false; // Not a provider command
   }
 }
 

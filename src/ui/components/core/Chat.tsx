@@ -150,14 +150,21 @@ export default function Chat({ agent }: ChatProps) {
     approveToolExecution(approved, autoApproveSession);
   };
 
-  const handleLogin = (apiKey: string) => {
+  const handleLogin = async (apiKey: string) => {
     setShowLogin(false);
-    // Save the API key persistently
-    agent.saveApiKey(apiKey);
-    addMessage({
-      role: 'system',
-      content: 'API key saved successfully. You can now start chatting with the assistant.',
-    });
+    try {
+      // Save the API key persistently
+      await agent.saveApiKey(apiKey);
+      addMessage({
+        role: 'system',
+        content: 'API key saved successfully. You can now start chatting with the assistant.',
+      });
+    } catch (error) {
+      addMessage({
+        role: 'system',
+        content: `Failed to save API key: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      });
+    }
   };
 
   const handleLoginCancel = () => {
