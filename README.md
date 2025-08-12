@@ -92,6 +92,17 @@ npm run dev
 
 This watch mode automatically rebuilds the TypeScript code whenever you make changes, enabling rapid development and testing. See [docs/dev-auto.md](docs/dev-auto.md) for more details about the auto-development workflow.
 
+### Run Instantly
+```bash
+# Using npx, no installation required
+npx groq-code-cli@latest
+```
+
+### Install Globally
+```bash
+npm install -g groq-code-cli@latest
+```
+
 ### Self-Update
 ```bash
 # Update to the latest version (if installed globally)
