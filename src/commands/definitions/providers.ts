@@ -73,8 +73,8 @@ export const providersCommand: CommandDefinition = {
       
       content += '**Available Commands:**\n';
       content += '• `/switch <provider>` - Switch to a specific provider\n';
-      content += '• `/models` - List all models from all providers\n';
-      content += '• `/models <query>` - Search models by name\n';
+      content += '• `/models` - List models from active provider (or all if none active)\n';
+      content += '• `/models <query>` - Search models by name across all providers\n';
       content += '• `/provider-help` - Get help with provider setup\n';
 
       context.addMessage({
@@ -170,6 +170,10 @@ export const modelsCommand: CommandDefinition = {
     }
 
     try {
+      // Check active provider
+      const providerManager = await agent.getProviderManager();
+      const activeProvider = providerManager.getActiveProvider();
+
       // Extract search query if provided
       const fullMessage = (context as any).lastCommand || '';
       const match = fullMessage.match(/\/(?:models|m|model-list)\s+(.+)/i);
@@ -194,9 +198,27 @@ export const modelsCommand: CommandDefinition = {
           return;
         }
       } else {
-        // List all models
-        models = await agent.listAllModels();
-        content = '🎯 **All Available Models**\n\n';
+        // List models - prioritize active provider if available
+        if (activeProvider) {
+          // Show only models from active provider
+          const detection = await agent.detectProviders();
+          const activeProviderResult = detection.find(d => d.provider === activeProvider.name);
+          
+          if (activeProviderResult && activeProviderResult.models) {
+            models = activeProviderResult.models.map(m => ({
+              ...m,
+              provider: activeProvider.name
+            }));
+            content = `🎯 **${activeProvider.displayName} Models** (active provider)\n\n`;
+          } else {
+            models = await agent.listAllModels();
+            content = '🎯 **All Available Models** (active provider has no models)\n\n';
+          }
+        } else {
+          // No active provider, show all models
+          models = await agent.listAllModels();
+          content = '🎯 **All Available Models** (no active provider)\n\n';
+        }
       }
 
       // Group models by provider
