@@ -11,10 +11,29 @@ export const helpCommand: CommandDefinition = {
       return `/${cmd.command}${aliases} - ${cmd.description}`;
     }).join('\n');
     
+    const agentCommandsHelp = `
+
+🤖 **Agent System Commands:**
+• \`/agent <name>\` - Switch to specific agent
+• \`/agents\` - List all available agents  
+• \`/agent-create <name> <prompt>\` - Create new agent
+• \`/agent-delete <name>\` - Delete custom agent
+• \`/system <prompt>\` - Set temporary system prompt
+• \`/system-reset\` - Reset to default prompt
+• \`/agent-export <name> <file>\` - Export agent to file
+• \`/agent-import <file>\` - Import agent from file
+
+🎯 **Pre-built Agents:**
+• \`reviewer\` - Code review specialist
+• \`architect\` - System design expert
+• \`debugger\` - Bug finding specialist  
+• \`teacher\` - Educational mentor
+• \`optimizer\` - Performance expert`;
+
     addMessage({
       role: 'system',
       content: `Available Commands:
-${commandList}
+${commandList}${agentCommandsHelp}
 
 Navigation:
 - Use arrow keys to navigate chat history

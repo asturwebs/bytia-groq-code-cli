@@ -3,6 +3,7 @@ import { executeTool } from '../tools/tools.js';
 import { validateReadBeforeEdit, getReadBeforeEditError } from '../tools/validators.js';
 import { ALL_TOOL_SCHEMAS, DANGEROUS_TOOLS, APPROVAL_REQUIRED_TOOLS } from '../tools/tool-schemas.js';
 import { ConfigManager } from '../utils/local-settings.js';
+import { AgentManager } from '../utils/agent-manager.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -78,9 +79,28 @@ export class Agent {
   }
 
   private buildDefaultSystemMessage(): string {
+    // Check if AgentManager has a custom system prompt
+    try {
+      const agentManager = AgentManager.getInstance();
+      const currentAgent = agentManager.getCurrentAgent();
+      
+      if (currentAgent && currentAgent.systemPrompt && currentAgent.name !== 'default') {
+        return currentAgent.systemPrompt;
+      }
+    } catch (error) {
+      // AgentManager not available, use default
+    }
+
     return `You are a coding assistant powered by ${this.model} on Groq. Tools are available to you. Use tools to complete tasks.
 
 CRITICAL: For ANY implementation request (building apps, creating components, writing code), you MUST use tools to create actual files. NEVER provide text-only responses for coding tasks that require implementation.
+
+USER CONTROL AWARENESS:
+- The user can interrupt you at ANY TIME using ESC key during processing
+- If you detect you might be thinking too long or in a loop, be concise and actionable
+- The user has full control and can stop your response if it's not what they need
+- Tool executions CANNOT be interrupted once started, so ensure tools are necessary
+- Keep responses focused - the user prefers action over lengthy explanations
 
 Use tools to:
 - Read and understand files (read_file, list_files, search_files)
@@ -118,16 +138,22 @@ COMMAND EXECUTION SAFETY:
   - Examples of SAFE commands: "python test_script.py", "npm test", "ls -la", "git status"
   - If a long-running command is needed to complete the task, provide it to the user at the end of the response, not as a tool call, with a description of what it's for.
 
-IMPORTANT: When creating files, keep them focused and reasonably sized. For large applications:
-1. Start with a simple, minimal version first
-2. Create separate files for different components
-3. Build incrementally rather than generating massive files at once
+RESPONSE QUALITY GUIDELINES:
+- Be direct and efficient - avoid unnecessary elaboration
+- If a task is complex, break it into clear steps and execute them
+- When creating files, keep them focused and reasonably sized
+- For large applications: start simple, create separate components, build incrementally
+- If you're unsure about user intent, ask specific clarifying questions rather than assuming
+- Provide brief status updates during multi-step processes
 
-Be direct and efficient.
+INTERACTIVE ENVIRONMENT AWARENESS:
+- You're in a terminal-based CLI with real-time interaction
+- Users expect quick, actionable responses
+- Long thinking or processing can be interrupted by the user
+- Focus on solving the immediate problem efficiently
+- Don't generate markdown tables or overly formatted text
 
-Don't generate markdown tables.
-
-When asked about your identity, you should identify yourself as a coding assistant running on the ${this.model} model via Groq.`;
+When asked about your identity, you should identify yourself as a coding assistant running on the ${this.model} model via Groq with robust interrupt handling and user control features.`;
   }
 
 
